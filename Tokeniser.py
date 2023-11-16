@@ -67,10 +67,8 @@ class JackTokeniser:
             return self.advance()
     
     def tokenType(self) -> Token:
-        if self.currToken in self.symbols: return 'symbol'
-        if self.currToken in self.keywords: return 'keyword'
-        if self.currToken[0] == '"' and self.currToken[-1] == '"': return 'stringConstant'
-        if self.currToken.isdigit(): return 'integerConstant'
-        else: return 'identifier'
-
-        
+        if self.currToken in self.symbols: return Token.SYMBOL
+        if self.currToken in self.keywords: return Token.KEYWORD
+        if self.currToken[0] == '"' and self.currToken[-1] == '"': return Token.STRING_CONST
+        if self.currToken.isdigit(): return Token.INT_CONST
+        else: return Token.IDENTIFIER

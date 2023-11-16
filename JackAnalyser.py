@@ -1,7 +1,18 @@
 import sys
 from pathlib import Path
 
-from Tokeniser import JackTokeniser
+from Tokeniser import JackTokeniser, Token
+
+
+def token2string(token: Token) -> str:
+    match token:
+        case Token.STRING_CONST: return "stringConstant"
+        case Token.INT_CONST: return "integerConstant"
+        case Token.IDENTIFIER: return "identifier"
+        case Token.KEYWORD: return "keyword"
+        case Token.SYMBOL: return "symbol"
+
+
 
 class JackAnalyser:
     def __init__(self, fp: str | Path) -> None:
@@ -21,10 +32,10 @@ class JackAnalyser:
         result = ""
         while self.tokeniser.hasMoreTokens():
             self.tokeniser.advance()
-            if self.tokeniser.tokenType() == "stringConstant":
-                result += f"<{self.tokeniser.tokenType()}> {self.tokeniser.currToken[1:-1]} </{self.tokeniser.tokenType()}>\n"
+            if self.tokeniser.tokenType() == Token.STRING_CONST:
+                result += f"<{token2string(self.tokeniser.tokenType())}> {self.tokeniser.currToken[1:-1]} </{token2string(self.tokeniser.tokenType())}>\n"
             else:
-                result += f"<{self.tokeniser.tokenType()}> {self.escape(self.tokeniser.currToken)} </{self.tokeniser.tokenType()}>\n"
+                result += f"<{token2string(self.tokeniser.tokenType())}> {self.escape(self.tokeniser.currToken)} </{token2string(self.tokeniser.tokenType())}>\n"
         with open(save_path, 'w') as f:
             f.write('<tokens>\n')
             f.write(result)
