@@ -45,7 +45,7 @@ class CompilationEngine:
             if line == "<tokens>" or line == "</tokens>":
                 continue
             parts = line.split('>')
-            token = parts[1].split('<')[0].strip()
+            token = parts[1].split('<')[0][1:-1]
             token_type = parts[0][1:]
             tokens.append((token_type, token))
         

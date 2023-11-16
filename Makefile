@@ -19,7 +19,7 @@ txml: compile
 	@echo "All *T.xml files passed successfully."
 
 xml: compile
-	@# diff --strip-trailing-cr ../ArrayTest/Main.xml ../ArrayTest/Main.f.xml
+	@diff --strip-trailing-cr ../ArrayTest/Main.xml ../ArrayTest/Main.f.xml
 	@diff --strip-trailing-cr ../ExpressionLessSquare/Main.xml ../ExpressionLessSquare/Main.f.xml
 	@diff --strip-trailing-cr ../ExpressionLessSquare/Square.xml ../ExpressionLessSquare/Square.f.xml
 	@diff --strip-trailing-cr ../ExpressionLessSquare/SquareGame.xml ../ExpressionLessSquare/SquareGame.f.xml
