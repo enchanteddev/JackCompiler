@@ -1,0 +1,14 @@
+class Fn{
+    static int x;
+    field int a, b;
+
+    constructor Fn new(int a, Fn b){
+
+    }
+    method int wadaw(int a, Fn b){
+
+    }
+    function int wwww(){
+
+    }
+}

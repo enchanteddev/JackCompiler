@@ -1,0 +1,75 @@
+<class>
+	<keyword> class </keyword>
+	<identifier> Fn </identifier>
+	<symbol> { </symbol>
+	<classVarDec>
+		<keyword> static </keyword>
+		<keyword> int </keyword>
+		<identifier> x </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<classVarDec>
+		<keyword> field </keyword>
+		<keyword> int </keyword>
+		<identifier> a </identifier>
+		<symbol> , </symbol>
+		<identifier> b </identifier>
+		<symbol> ; </symbol>
+	</classVarDec>
+	<subroutineDec>
+		<keyword> constructor </keyword>
+		<identifier> Fn </identifier>
+		<identifier> new </identifier>
+		<symbol> ( </symbol>
+		<parameterList>
+			<keyword> int </keyword>
+			<identifier> a </identifier>
+			<symbol> , </symbol>
+			<identifier> Fn </identifier>
+			<identifier> b </identifier>
+		</parameterList>
+		<symbol> ) </symbol>
+		<subroutineBody>
+			<symbol> { </symbol>
+			<statements>
+			</statements>
+			<symbol> } </symbol>
+		</subroutineBody>
+	</subroutineDec>
+	<subroutineDec>
+		<keyword> method </keyword>
+		<keyword> int </keyword>
+		<identifier> wadaw </identifier>
+		<symbol> ( </symbol>
+		<parameterList>
+			<keyword> int </keyword>
+			<identifier> a </identifier>
+			<symbol> , </symbol>
+			<identifier> Fn </identifier>
+			<identifier> b </identifier>
+		</parameterList>
+		<symbol> ) </symbol>
+		<subroutineBody>
+			<symbol> { </symbol>
+			<statements>
+			</statements>
+			<symbol> } </symbol>
+		</subroutineBody>
+	</subroutineDec>
+	<subroutineDec>
+		<keyword> function </keyword>
+		<keyword> int </keyword>
+		<identifier> wwww </identifier>
+		<symbol> ( </symbol>
+		<parameterList>
+		</parameterList>
+		<symbol> ) </symbol>
+		<subroutineBody>
+			<symbol> { </symbol>
+			<statements>
+			</statements>
+			<symbol> } </symbol>
+		</subroutineBody>
+	</subroutineDec>
+	<symbol> } </symbol>
+</class>
