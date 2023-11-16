@@ -5,17 +5,18 @@ class XML:
         self.fp = Path(fp)
         self._buffer = ""
         self.tag_depth = 0
+        self.indent_char = '  '
 
     def open_tag(self, tag: str):
-        self._buffer += '\t' * self.tag_depth + f"<{tag}>\n"
+        self._buffer += self.indent_char * self.tag_depth + f"<{tag}>\n"
         self.tag_depth += 1
 
     def close_tag(self, tag: str):
         self.tag_depth -= 1
-        self._buffer += '\t' * self.tag_depth + f"</{tag}>\n"
+        self._buffer += self.indent_char * self.tag_depth + f"</{tag}>\n"
 
     def write(self, tag: str, value: str):
-        self._buffer += '\t' * self.tag_depth + f"<{tag}> {value} </{tag}>\n"
+        self._buffer += self.indent_char * self.tag_depth + f"<{tag}> {value} </{tag}>\n"
     
     def close(self):
         with open(self.fp, "w") as outf:
@@ -23,7 +24,7 @@ class XML:
 
 
 class CompilationEngine:
-    operators = '+-*/&|<>='
+    operators = list('+-*/|=') + ['&lt;', '&gt;', '&amp;']
 
     def __init__(self, fp: str | Path) -> None:
         self.fp = Path(fp)
@@ -43,21 +44,24 @@ class CompilationEngine:
         for line in txml_lines:
             if line == "<tokens>" or line == "</tokens>":
                 continue
-            parts = line.split()
-            token = parts[1]
-            token_type = parts[0][1:-1]
+            parts = line.split('>')
+            token = parts[1].split('<')[0].strip()
+            token_type = parts[0][1:]
             tokens.append((token_type, token))
         
         self.tokens = tokens
     
 
-    def check_and_write(self, condition, callback = None):
+    def check_and_write(self, condition, callback = lambda:None):
         if condition(self.tokens[self.cursor]):
             self.xml.write(*self.tokens[self.cursor])
             self.cursor += 1
+            return True
         else:
-            print(self.tokens[self.cursor])
+            # print(self.tokens[self.cursor], self.cursor)
             callback()
+            return False
+            # raise SyntaxError
 
     
     def compileClassVarDec(self):
@@ -78,7 +82,7 @@ class CompilationEngine:
     
 
     def compileVarDec(self):
-        self.xml.open_tag('VarDec')
+        self.xml.open_tag('varDec')
 
         self.check_and_write(lambda x: x[0] == 'keyword' and x[1] == 'var')
         self.check_and_write(lambda x: (x[0] == 'keyword' and x[1] in ('boolean', 'int', 'char')) or (x[0] == 'identifier'))
@@ -91,7 +95,7 @@ class CompilationEngine:
 
         self.check_and_write(lambda x: x == ('symbol', ';'))
 
-        self.xml.close_tag('VarDec')
+        self.xml.close_tag('varDec')
     
 
     def compileSubroutineDec(self):
@@ -154,21 +158,79 @@ class CompilationEngine:
             self.check_and_write(lambda x: x == ('symbol', '['))
             self.compileExpression()
             self.check_and_write(lambda x: x == ('symbol', ']'))
+        self.check_and_write(lambda x: x[1] == '=')
+        self.compileExpression()
+        self.check_and_write(lambda x: x[1] == ';')
         self.xml.close_tag('letStatement')
+    
+    def compileIfStatement(self):
+        self.xml.open_tag('ifStatement')
+        self.check_and_write(lambda x: x == ('keyword', 'if'))
+        self.check_and_write(lambda x: x == ('symbol', '('))
+        self.compileExpression()
+        self.check_and_write(lambda x: x == ('symbol', ')'))
+        self.check_and_write(lambda x: x == ('symbol', '{'))
+        self.compileStatements()
+        self.check_and_write(lambda x: x == ('symbol', '}'))
+        if self.tokens[self.cursor] == ('keyword', 'else'):
+            self.check_and_write(lambda x: x == ('keyword', 'else'))
+            self.check_and_write(lambda x: x == ('symbol', '{'))
+            self.compileStatements()
+            self.check_and_write(lambda x: x == ('symbol', '}'))
+        self.xml.close_tag('ifStatement')
+    
+    def compileWhileStatement(self):
+        self.xml.open_tag('whileStatement')
+        self.check_and_write(lambda x: x == ('keyword', 'while'))
+        self.check_and_write(lambda x: x == ('symbol', '('))
+        self.compileExpression()
+        self.check_and_write(lambda x: x == ('symbol', ')'))
+        self.check_and_write(lambda x: x == ('symbol', '{'))
+        self.compileStatements()
+        self.check_and_write(lambda x: x == ('symbol', '}'))
+        self.xml.close_tag('whileStatement')
+    
+    def compileDoStatement(self):
+        self.xml.open_tag('doStatement')
+        self.check_and_write(lambda x: x == ('keyword', 'do'))
+        if self.tokens[self.cursor][0] == 'identifier':
+            self.check_and_write(lambda x: x[0] == 'identifier')            
+            if self.tokens[self.cursor] == ('symbol', '('):
+                self.check_and_write(lambda x: x == ('symbol', '('))
+                self.compileExpressionList()
+                self.check_and_write(lambda x: x == ('symbol', ')'))
+            
+            elif self.tokens[self.cursor] == ('symbol', '.'):
+                self.check_and_write(lambda x: x == ('symbol', '.'))
+                self.check_and_write(lambda x: x[0] == 'identifier')
+                self.check_and_write(lambda x: x == ('symbol', '('))
+                self.compileExpressionList()
+                self.check_and_write(lambda x: x == ('symbol', ')'))
+        self.check_and_write(lambda x: x == ('symbol', ';'))
+        self.xml.close_tag('doStatement')
+    
+    def compileReturnStatement(self):
+        self.xml.open_tag('returnStatement')
+        self.check_and_write(lambda x: x == ('keyword', 'return'))
+        if self.tokens[self.cursor][1] != ';':
+            self.compileExpression()
+        self.check_and_write(lambda x: x == ('symbol', ';'))
+        self.xml.close_tag('returnStatement')
     
 
     def compileExpression(self):
         self.xml.open_tag('expression')
         self.compileTerm()
         if self.tokens[self.cursor][1] in self.operators:
-            self.check_and_write(lambda x: x in self.operators)
+            self.check_and_write(lambda x: x[1] in self.operators)
             self.compileTerm()
         self.xml.close_tag('expression')
 
     
     def compileTerm(self):
         self.xml.open_tag('term')
-        self.check_and_write(lambda x: x[0] in ('integerConstant', 'stringConstant', 'keywordConstant', 'identifier'))
+        flag = self.check_and_write(lambda x: x[0] in ('integerConstant', 'stringConstant', 'identifier') or 
+                                    (x[0] == 'keyword' and x[1] in ('true', 'false', 'this', 'null')))
         if self.tokens[self.cursor - 1][0] == 'identifier':
             if self.tokens[self.cursor] == ('symbol', '['):
                 self.check_and_write(lambda x: x == ('symbol', '['))
@@ -179,14 +241,38 @@ class CompilationEngine:
                 self.check_and_write(lambda x: x == ('symbol', '('))
                 self.compileExpressionList()
                 self.check_and_write(lambda x: x == ('symbol', ')'))
+            
+            elif self.tokens[self.cursor] == ('symbol', '.'):
+                self.check_and_write(lambda x: x == ('symbol', '.'))
+                self.check_and_write(lambda x: x[0] == 'identifier')
+                self.check_and_write(lambda x: x == ('symbol', '('))
+                self.compileExpressionList()
+                self.check_and_write(lambda x: x == ('symbol', ')'))
+
+        
+        if not flag:
+            match self.tokens[self.cursor][1]:
+                case '(':
+                    self.check_and_write(lambda x: x[1] == '(')
+                    self.compileExpression()
+                    self.check_and_write(lambda x: x[1] == ')')
+                case '~':
+                    self.check_and_write(lambda x: x[1] == '~')
+                    self.compileTerm()
+                case '-':
+                    self.check_and_write(lambda x: x[1] == '-')
+                    self.compileTerm()
 
         self.xml.close_tag('term')
 
     
     def compileExpressionList(self):
         self.xml.open_tag('expressionList')
-        if self.tokens[self.cursor][0] == 'identifier':
-            self.check_and_write(lambda x: x[0] == 'identifier')
+        if self.tokens[self.cursor][1] != ')':
+            self.compileExpression()
+            while self.tokens[self.cursor][1] == ',':
+                self.check_and_write(lambda x: x[1] == ',')
+                self.compileExpression()
         self.xml.close_tag('expressionList')
 
 
