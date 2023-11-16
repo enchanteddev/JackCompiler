@@ -1,0 +1,16 @@
+<tokens>
+<keyword> class </keyword>
+<identifier> Simple </identifier>
+<symbol> { </symbol>
+<keyword> field </keyword>
+<keyword> int </keyword>
+<identifier> x </identifier>
+<symbol> ; </symbol>
+<keyword> static </keyword>
+<keyword> char </keyword>
+<identifier> z </identifier>
+<symbol> , </symbol>
+<identifier> y </identifier>
+<symbol> ; </symbol>
+<symbol> } </symbol>
+</tokens>

@@ -1,0 +1,4 @@
+class Simple{
+    field int x;
+    static char z, y;
+}

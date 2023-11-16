@@ -2,6 +2,7 @@ import sys
 from pathlib import Path
 
 from Tokeniser import JackTokeniser, Token
+from CompilationEngine import CompilationEngine
 
 
 def token2string(token: Token) -> str:
@@ -28,7 +29,7 @@ class JackAnalyser:
         return text
     
     def tokenise(self):
-        save_path = self.fp.with_name(self.fp.name + '.new.xml')
+        save_path = self.fp.with_name(self.fp.name.split('.')[0] + '.new.xml')
         result = ""
         while self.tokeniser.hasMoreTokens():
             self.tokeniser.advance()
@@ -40,6 +41,13 @@ class JackAnalyser:
             f.write('<tokens>\n')
             f.write(result)
             f.write('</tokens>\n')
+        
+        self.compile(save_path)
+    
+    def compile(self, fp):
+        compiler = CompilationEngine(fp)
+        compiler.compileClass()
+        
 
 
 J = JackAnalyser(sys.argv[1])
