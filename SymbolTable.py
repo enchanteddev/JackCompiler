@@ -1,5 +1,5 @@
 class BaseSymbolTable:
-    def __init__():
+    def __init__(self):
         self.table = {
             "name": [],
             "type": [],
@@ -8,10 +8,10 @@ class BaseSymbolTable:
         }
     
     def define(self, name: str, type_: str, kind: str):
-        self.class_table["name"].append(name)
-        self.class_table["type"].append(type_)
-        self.class_table["kind"].append(kind)
-        self.class_table["index"].append(self.table["kind"].count(kind) + 1)
+        self.table["name"].append(name)
+        self.table["type"].append(type_)
+        self.table["kind"].append(kind)
+        self.table["index"].append(self.table["kind"].count(kind) + 1)
     
     def reset(self):
         for col in self.table:
@@ -20,7 +20,7 @@ class BaseSymbolTable:
 
 
 class SymbolTable:
-    def __init__():
+    def __init__(self):
         self.class_table = BaseSymbolTable()
         self.subroutine_table = BaseSymbolTable()
     
