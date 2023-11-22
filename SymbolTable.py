@@ -1,3 +1,13 @@
+from enum import Enum, auto
+
+
+class Kind(Enum):
+    FIELD = auto()
+    STATIC = auto()
+    ARG = auto()
+    VAR = auto()
+
+
 class BaseSymbolTable:
     def __init__(self):
         self.table = {
@@ -7,7 +17,7 @@ class BaseSymbolTable:
             "index": []
         }
     
-    def define(self, name: str, type_: str, kind: str):
+    def define(self, name: str, type_: str, kind: Kind):
         self.table["name"].append(name)
         self.table["type"].append(type_)
         self.table["kind"].append(kind)
@@ -24,13 +34,13 @@ class SymbolTable:
         self.class_table = BaseSymbolTable()
         self.subroutine_table = BaseSymbolTable()
     
-    def define(self, name: str, type_: str, kind: str):
+    def define(self, name: str, type_: str, kind: Kind):
         if kind in ("static", "field"):
             self.class_table.define(name, type_, kind)
         else:
             self.subroutine_table.define(name, type_, kind)
     
-    def varCount(self, kind: str):
+    def varCount(self, kind: Kind):
         if kind in ("static", "field"):
             self.class_table.table["kind"].count(kind)
         else:
@@ -45,7 +55,7 @@ class SymbolTable:
     
 
     def typeOf(self, name: str): return self.attrOf(name, "type")
-    def kindOf(self, name: str): return self.attrOf(name, "kind")
+    def kindOf(self, name: str) -> Kind: return self.attrOf(name, "kind")
     def indexOf(self, name: str): return self.attrOf(name, "index")
 
     def reset(self):
