@@ -49,9 +49,9 @@ class SymbolTable:
 
     def attrOf(self, name: str, attr: str):
         try:
-            return self.class_table.table[attr][self.class_table.table["name"].index(name)]
-        except ValueError:
             return self.subroutine_table.table[attr][self.subroutine_table.table["name"].index(name)]
+        except ValueError:
+            return self.class_table.table[attr][self.class_table.table["name"].index(name)]
     
 
     def typeOf(self, name: str): return self.attrOf(name, "type")

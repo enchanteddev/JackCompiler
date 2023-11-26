@@ -1,5 +1,7 @@
 from pathlib import Path
 from enum import Enum, auto
+from SymbolTable import Kind
+
 
 class Segment(Enum):
     CONSTANT = auto()
@@ -22,6 +24,14 @@ class ArithmeticCommand(Enum):
     AND = auto()
     OR = auto()
     NOT = auto()
+
+
+def kind2seg(kind: Kind) -> Segment:
+    match kind:
+        case Kind.ARG: return Segment.ARGUMENT
+        case Kind.VAR: return Segment.LOCAL
+        case Kind.STATIC: return Segment.STATIC
+        case Kind.FIELD: return Segment.THIS
 
 
 class VMWriter:
