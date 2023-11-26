@@ -51,16 +51,30 @@ class JackTokeniser:
             self.currToken = letter
             self.cursor = nc + 1
             return
-        while (letter := self.jackCode[nc]) not in self.symbols:
+        
+        letter = self.jackCode[nc]
+        if letter == '"':
             nc += 1
-            whitespace = "\n\t "
-            if temp and temp[0] == '"':
-                whitespace = "\n"
-            if letter in whitespace:
-                if temp:
-                    break
-                else: continue
-            temp += letter
+            letter = self.jackCode[nc]
+            temp += '"'
+            while letter != '"':
+                temp += letter
+                nc += 1
+                letter = self.jackCode[nc]
+            temp += '"'
+            nc += 1
+        else:
+            while (letter := self.jackCode[nc]) not in self.symbols:
+                nc += 1
+                whitespace = "\n\t "
+                if temp and temp[0] == '"':
+                    whitespace = "\n"
+                if letter in whitespace:
+                    if temp:
+                        break
+                    else: continue
+                temp += letter
+
         self.currToken = temp
         self.cursor = nc
         if temp == '':

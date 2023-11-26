@@ -40,7 +40,7 @@ class VMWriter:
         self._buffer = ""
 
     def writePush(self, segment: Segment, index: int):
-        self._buffer += f"push {segment.name.lower()}\n"
+        self._buffer += f"push {segment.name.lower()} {index}\n"
     
 
     def writePop(self, segment: Segment, index: int):

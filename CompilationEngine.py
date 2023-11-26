@@ -20,6 +20,7 @@ class CompilationEngine:
         self.cursor = 0
         self.ifLbC = 0
         self.whLbC = 0
+        self.className = ''
         self.constructor()
 
     def constructor(self):
@@ -52,12 +53,12 @@ class CompilationEngine:
         return self.tokens[self.cursor]
 
     def check_and_next(self, condition, task = lambda:None, callback = print):
-        print("wdaw")
+        # print("c&n:", self.currToken)
         if condition(self.currToken):
             task()
             self.cursor += 1
         else:
-            callback(f"[{self.cursor}]: Failed at: {self.currToken}")
+            callback(f"[{self.cursor}]: Failed at: {self.currToken} | {condition}")
     
     def compileClassVarDec(self):
         if self.currToken[0] == 'keyword':
@@ -82,14 +83,17 @@ class CompilationEngine:
         
         while self.currToken == ('symbol', ','):
             self.cursor += 1
-            self.check_and_write(lambda x: x[0] == 'identifier')
+            # self.check_and_write(lambda x: x[0] == 'identifier')
             
             if self.currToken[0] == 'identifier':
                 name = self.currToken[1]
+                self.cursor += 1
             else:
                 raise SyntaxError
             
             self.symtab.define(name, type_, kind)
+        self.check_and_next(lambda x: x == ('symbol', ';'))
+        
     
 
     def compileVarDec(self):
@@ -128,6 +132,12 @@ class CompilationEngine:
 
     def compileSubroutineDec(self, className = ''):
         self.check_and_next(lambda x: x[0] == 'keyword' and x[1] in ('constructor', 'function', 'method'))
+        if self.tokens[self.cursor - 1][1] == 'constructor':
+            isC = True
+        else: isC = False
+        if self.tokens[self.cursor - 1][1] == 'method':
+            isM = True
+        else: isM = False
         self.check_and_next(lambda x: (x[0] == 'keyword' and x[1] in ('boolean', 'int', 'char', 'void')) or (x[0] == 'identifier'))
         if self.currToken[0] == 'identifier':
             name = self.currToken[1]
@@ -135,14 +145,14 @@ class CompilationEngine:
         else: raise SyntaxError
 
         self.check_and_next(lambda x: x == ('symbol', '('))
-        self.compileParameterList()
+        self.compileParameterList(isM)
         #  while self.currToken[1] != ')': self.cursor += 1
         
-        self.compileSubroutineBody(f'{className}.{name}' if className else name)
+        self.compileSubroutineBody(f'{className}.{name}' if className else name, isC, isM)
 
     
-    def compileParameterList(self):
-        print(self.currToken)
+    def compileParameterList(self, isM):
+        # print(self.currToken)
         if self.tokens[self.cursor][1] == ')':
             self.check_and_next(lambda x: x[1] == ')')
             return
@@ -157,7 +167,7 @@ class CompilationEngine:
             self.cursor += 1
         else: raise SyntaxError(self.currToken)
 
-        self.symtab.define(name, type_, Kind.ARG)
+        self.symtab.define(name, type_, Kind.ARG, isM)
 
         while self.tokens[self.cursor] == ('symbol', ','):
             self.cursor += 1
@@ -171,16 +181,23 @@ class CompilationEngine:
                 self.cursor += 1
             else: raise SyntaxError
 
-            self.symtab.define(name, type_, Kind.ARG)
+            self.symtab.define(name, type_, Kind.ARG, isM)
         self.check_and_next(lambda x: x[1] == ')')
 
 
-    def compileSubroutineBody(self, name: str):
+    def compileSubroutineBody(self, name: str, isC, isM):
         self.check_and_next(lambda x: x == ('symbol', '{'))
         nVars = 0
         while self.currToken == ('keyword', 'var'):
             nVars += self.compileVarDec()
         self.vmwriter.writeFunction(name, nVars)
+        if isC:
+            self.vmwriter.writePush(Segment.CONSTANT, self.symtab.class_table.table["kind"].count(Kind.FIELD))
+            self.vmwriter.writeCall('Memory.alloc', 1)
+            self.vmwriter.writePop(Segment.POINTER, 0)
+        if isM:
+            self.vmwriter.writePush(Segment.ARGUMENT, 0)
+            self.vmwriter.writePop(Segment.POINTER, 0)
         self.compileStatements()
         self.check_and_next(lambda x: x == ('symbol', '}'))
     
@@ -205,11 +222,30 @@ class CompilationEngine:
         kind = self.symtab.kindOf(name)
         index = self.symtab.indexOf(name)
 
-        self.check_and_next(lambda x: x[1] == '=')
-        self.compileExpression()
-        self.check_and_next(lambda x: x[1] == ';')
+        isArray = False
 
-        self.vmwriter.writePop(kind2seg(kind), index)
+        if self.currToken == ('symbol', '['):
+            isArray = True
+            self.vmwriter.writePush(kind2seg(kind), index)
+            self.check_and_next(lambda x: x == ('symbol', '['))
+            self.compileExpression()
+            self.check_and_next(lambda x: x == ('symbol', ']'))
+            self.vmwriter.writeArithmetic(ArithmeticCommand.ADD)
+
+        self.check_and_next(lambda x: x[1] == '=')
+        # print('1')
+        self.compileExpression()
+        # print('2')
+        self.check_and_next(lambda x: x[1] == ';')
+        # print('3')
+
+        if isArray:
+            self.vmwriter.writePop(Segment.TEMP, 0)
+            self.vmwriter.writePop(Segment.POINTER, 1)
+            self.vmwriter.writePush(Segment.TEMP, 0)
+            self.vmwriter.writePop(Segment.THAT, 0)
+        else:
+            self.vmwriter.writePop(kind2seg(kind), index)
 
     
     def compileIfStatement(self):
@@ -239,17 +275,17 @@ class CompilationEngine:
         self.vmwriter.writeLabel(end)
     
     def compileWhileStatement(self):
+        whileLabel = f'while{self.whLbC}'
         self.check_and_next(lambda x: x == ('keyword', 'while'))
         self.check_and_next(lambda x: x == ('symbol', '('))
+        self.vmwriter.writeLabel(whileLabel)
         self.compileExpression()
         self.vmwriter.writeArithmetic(ArithmeticCommand.NOT)
         self.check_and_next(lambda x: x == ('symbol', ')'))
         self.check_and_next(lambda x: x == ('symbol', '{'))
-        whileLabel = f'while{self.whLbC}'
         end = f'endwhile{self.whLbC}'
         self.whLbC += 1
         self.vmwriter.writeIf(end)
-        self.vmwriter.writeLabel(whileLabel)
         self.compileStatements()
         self.vmwriter.writeGoto(whileLabel)
         self.check_and_next(lambda x: x == ('symbol', '}'))
@@ -265,7 +301,7 @@ class CompilationEngine:
                 self.vmwriter.writePush(Segment.POINTER, 0)
                 args = self.compileExpressionList()
                 self.check_and_next(lambda x: x == ('symbol', ')'))
-                self.vmwriter.writeCall(identifier, args + 1)
+                self.vmwriter.writeCall(f'{self.className}.{identifier}', args + 1)
             
             elif self.currToken == ('symbol', '.'):
                 isMethod = True
@@ -278,14 +314,18 @@ class CompilationEngine:
                 self.check_and_next(lambda x: x == ('symbol', '.'))
                 fnName = self.currToken[1]
                 self.cursor += 1
-                self.check_and_next(lambda x: x == ('symbol', '('))
-                args = self.compileExpressionList()
-                self.check_and_next(lambda x: x == ('symbol', ')'))
                 if isMethod:
                     self.vmwriter.writePush(kind2seg(kind), index) # type: ignore
+                    self.check_and_next(lambda x: x == ('symbol', '('))
+                    args = self.compileExpressionList()
+                    self.check_and_next(lambda x: x == ('symbol', ')'))
                     self.vmwriter.writeCall(f'{type_}.{fnName}', args + 1) # type: ignore
                 else:
+                    self.check_and_next(lambda x: x == ('symbol', '('))
+                    args = self.compileExpressionList()
+                    self.check_and_next(lambda x: x == ('symbol', ')'))
                     self.vmwriter.writeCall(f'{identifier}.{fnName}', args)
+        self.vmwriter.writePop(Segment.TEMP, 0)
         self.check_and_next(lambda x: x == ('symbol', ';'))
     
     def compileReturnStatement(self):
@@ -302,18 +342,20 @@ class CompilationEngine:
         self.compileTerm()
         if self.currToken[1] in self.operators:
             op = self.currToken[1]
+            self.cursor += 1
             self.compileTerm()
             
             match op:
                 case '+': self.vmwriter.writeArithmetic(ArithmeticCommand.ADD)
                 case '-': self.vmwriter.writeArithmetic(ArithmeticCommand.SUB)
                 case '=': self.vmwriter.writeArithmetic(ArithmeticCommand.EQ)
-                case '>': self.vmwriter.writeArithmetic(ArithmeticCommand.GT)
-                case '<': self.vmwriter.writeArithmetic(ArithmeticCommand.LT)
-                case '&': self.vmwriter.writeArithmetic(ArithmeticCommand.AND)
+                case '&gt;': self.vmwriter.writeArithmetic(ArithmeticCommand.GT)
+                case '&lt;': self.vmwriter.writeArithmetic(ArithmeticCommand.LT)
+                case '&amp;': self.vmwriter.writeArithmetic(ArithmeticCommand.AND)
                 case '|': self.vmwriter.writeArithmetic(ArithmeticCommand.OR)
                 case '*': self.vmwriter.writeCall('Math.multiply', 2)
                 case '/': self.vmwriter.writeCall('Math.divide', 2)
+            # self.cursor += 1
 
     
     def compileTerm(self):
@@ -342,21 +384,39 @@ class CompilationEngine:
                 self.vmwriter.writePush(seg, val)
                 if kw == 'true':
                     self.vmwriter.writeArithmetic(ArithmeticCommand.NEG)
-                self.vmwriter.writeReturn()
+                # self.vmwriter.writeReturn()
+                self.cursor += 1
+
 
             case ('integerConstant', integer):
                 self.vmwriter.writePush(Segment.CONSTANT, int(integer))
+                self.cursor += 1
+
 
             case ('stringConstant', string):
                 self.vmwriter.writePush(Segment.CONSTANT, len(string))
                 self.vmwriter.writeCall('String.new', 1)
                 for letter in string:
                     self.vmwriter.writePush(Segment.CONSTANT, ord(letter))
-                    self.vmwriter.writeCall('String.AppendChar', 1)
+                    self.vmwriter.writeCall('String.appendChar', 2)
+                self.cursor += 1
+                
 
             case ('identifier', identifier):
+                temp = self.tokens[self.cursor + 1]
                 match self.tokens[self.cursor + 1]:
-                    case ('symbol', '['): ...
+                    case ('symbol', '['):
+                        kind = self.symtab.kindOf(identifier)
+                        index = self.symtab.indexOf(identifier)
+                        self.vmwriter.writePush(kind2seg(kind), index)
+                        self.cursor += 2
+                        # print("array >", self.currToken)
+                        self.compileExpression()
+                        self.vmwriter.writeArithmetic(ArithmeticCommand.ADD)
+                        self.vmwriter.writePop(Segment.POINTER, 1)
+                        self.vmwriter.writePush(Segment.THAT, 0)
+                        self.check_and_next(lambda x: x[1] == ']')
+
                     case ('symbol', '('):
                         subroutineName = identifier
                         self.cursor += 1
@@ -396,10 +456,12 @@ class CompilationEngine:
                         # self.check_and_next(lambda x: x == ('symbol', ')'))
                         # self.vmwriter.writeCall(f'{self.symtab.typeOf(className)}.{subroutineName}', args + 1)
                     case _:
+                        # print('all catch', temp)
                         kind = self.symtab.kindOf(identifier)
                         index = self.symtab.indexOf(identifier)
                         self.vmwriter.writePush(kind2seg(kind), index)
-
+                        self.cursor += 1
+                        # print(self.currToken)
 
     
     def compileExpressionList(self) -> int:
@@ -417,7 +479,7 @@ class CompilationEngine:
     def compileClass(self):
         self.check_and_next(lambda x: x == ('keyword', 'class'))
         if self.currToken[0] == 'identifier':
-            cName = self.currToken[1]
+            self.className = self.currToken[1]
             self.cursor += 1
         else: raise SyntaxError
         self.check_and_next(lambda x: x == ('symbol', '{'))
@@ -426,7 +488,8 @@ class CompilationEngine:
             self.compileClassVarDec()
         
         while self.currToken[0] == 'keyword' and self.currToken[1] in ('constructor', 'function', 'method'):
-            self.compileSubroutineDec(cName)
+            self.symtab.reset()
+            self.compileSubroutineDec(self.className)
         
         self.check_and_next(lambda x: x == ('symbol', '}'))
 

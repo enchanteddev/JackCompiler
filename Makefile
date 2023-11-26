@@ -1,29 +1,34 @@
-compile:
-	@python3 JackAnalyser.py ../ArrayTest/Main.jack
-	@python3 JackAnalyser.py ../ExpressionLessSquare/Main.jack
-	@python3 JackAnalyser.py ../ExpressionLessSquare/Square.jack
-	@python3 JackAnalyser.py ../ExpressionLessSquare/SquareGame.jack
-	@python3 JackAnalyser.py ../Square/Main.jack
-	@python3 JackAnalyser.py ../Square/Square.jack
-	@python3 JackAnalyser.py ../Square/SquareGame.jack
-	@echo "Compilation Done"
+jack:
+	python3 JackAnalyser.py ../Average/Main.jack
+	python3 JackAnalyser.py ../ComplexArrays/Main.jack
+	python3 JackAnalyser.py ../ConvertToBin/Main.jack
+	python3 JackAnalyser.py ../Seven/Main.jack
 
-txml: compile
-	@diff --strip-trailing-cr ../ArrayTest/MainT.xml ../ArrayTest/Main.new.xml
-	@diff --strip-trailing-cr ../ExpressionLessSquare/MainT.xml ../ExpressionLessSquare/Main.new.xml
-	@diff --strip-trailing-cr ../ExpressionLessSquare/SquareT.xml ../ExpressionLessSquare/Square.new.xml
-	@diff --strip-trailing-cr ../ExpressionLessSquare/SquareGameT.xml ../ExpressionLessSquare/SquareGame.new.xml
-	@diff --strip-trailing-cr ../Square/MainT.xml ../Square/Main.new.xml
-	@diff --strip-trailing-cr ../Square/SquareT.xml ../Square/Square.new.xml
-	@diff --strip-trailing-cr ../Square/SquareGameT.xml ../Square/SquareGame.new.xml
-	@echo "All *T.xml files passed successfully."
+	python3 JackAnalyser.py ../Square/Main.jack
+	python3 JackAnalyser.py ../Square/SquareGame.jack
+	python3 JackAnalyser.py ../Square/Square.jack
+	python3 JackAnalyser.py ../Pong/Main.jack
+	python3 JackAnalyser.py ../Pong/PongGame.jack
+	python3 JackAnalyser.py ../Pong/Bat.jack
+	python3 JackAnalyser.py ../Pong/Ball.jack
 
-xml: compile
-	@diff --strip-trailing-cr ../ArrayTest/Main.xml ../ArrayTest/Main.f.xml
-	@diff --strip-trailing-cr ../ExpressionLessSquare/Main.xml ../ExpressionLessSquare/Main.f.xml
-	@diff --strip-trailing-cr ../ExpressionLessSquare/Square.xml ../ExpressionLessSquare/Square.f.xml
-	@diff --strip-trailing-cr ../ExpressionLessSquare/SquareGame.xml ../ExpressionLessSquare/SquareGame.f.xml
-	@diff --strip-trailing-cr ../Square/Main.xml ../Square/Main.f.xml
-	@diff --strip-trailing-cr ../Square/Square.xml ../Square/Square.f.xml
-	@diff --strip-trailing-cr ../Square/SquareGame.xml ../Square/SquareGame.f.xml
-	@echo "All *.xml files passed successfully."
+	mkdir -p ../Average/build
+	mkdir -p ../ComplexArrays/build
+	mkdir -p ../ConvertToBin/build
+	mkdir -p ../Seven/build
+	mkdir -p ../Square/build
+	mkdir -p ../Pong/build
+
+	mv ../Square/Main.new.vm ../Square/build/Main.vm
+	mv ../Square/Square.new.vm ../Square/build/Square.vm
+	mv ../Square/SquareGame.new.vm ../Square/build/SquareGame.vm
+
+	mv ../Pong/Main.new.vm ../Pong/build/Main.vm
+	mv ../Pong/Bat.new.vm ../Pong/build/Bat.vm
+	mv ../Pong/Ball.new.vm ../Pong/build/Ball.vm
+	mv ../Pong/PongGame.new.vm ../Pong/build/PongGame.vm
+	
+	mv ../Average/Main.new.vm ../Average/build/Main.vm
+	mv ../Seven/Main.new.vm ../Seven/build/Main.vm
+	mv ../ConvertToBin/Main.new.vm ../ConvertToBin/build/Main.vm
+	mv ../ComplexArrays/Main.new.vm ../ComplexArrays/build/Main.vm

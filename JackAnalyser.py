@@ -2,18 +2,8 @@
 I have made a Makefile for simplicity in testing.
 
 Run 
-    $ make xml
-to parse all the .jack files and compare the .xml files with the generated ones.
-
-Run
-    $ make txml
-to parse all the .jack files and compare the T.xml files with the generated ones.
-
-Run
-    $ make
-    or
-    $ make compile
-to parse all the .jack files and generate the corresponding T.xml and .xml files.
+    $ make jack
+to compile all jack files to .vm
 """
 
 
